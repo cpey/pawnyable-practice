@@ -1,0 +1,39 @@
+/ # ./kpti
+BUG: unable to handle page fault for address: ffffffff8127bbdc
+#PF: supervisor instruction fetch in kernel mode
+#PF: error_code(0x0010) - not-present page
+PGD 340d067 P4D 340d067 PUD 340e063 PMD 0
+Oops: 0010 [#1] PREEMPT SMP PTI
+CPU: 0 PID: 112 Comm: kpti Tainted: G           O      5.10.7 #1
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.16.2-1.fc38 04/01/2014
+RIP: 0010:0xffffffff8127bbdc
+Code: Unable to access opcode bytes at RIP 0xffffffff8127bbb2.
+RSP: 0018:ffffb4218057feb8 EFLAGS: 00000202
+RAX: 0000000000000478 RBX: ffff9c6341eb7800 RCX: 0000000000000000
+RDX: 000000000000007f RSI: ffffb4218057fea8 RDI: ffff9c6341fb8400
+RBP: 4141414141414141 R08: ffffffffa44a4608 R09: 0000000000004ffb
+R10: 00000000fffff000 R11: 3fffffffffffffff R12: 0000000000000478
+R13: 0000000000000000 R14: 00007fff48e66110 R15: ffffb4218057fef8
+FS:  0000000000405778(0000) GS:ffff9c6342400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffffffff8127bbb2 CR3: 0000000001f70000 CR4: 00000000003006f0
+Call Trace:
+ ? __x64_sys_write+0x15/0x20
+ ? do_syscall_64+0x38/0x50
+ ? entry_SYSCALL_64_after_hwframe+0x44/0xa9
+Modules linked in: vuln(O)
+CR2: ffffffff8127bbdc
+---[ end trace 43a475bf399335d0 ]---
+RIP: 0010:0xffffffff8127bbdc
+Code: Unable to access opcode bytes at RIP 0xffffffff8127bbb2.
+RSP: 0018:ffffb4218057feb8 EFLAGS: 00000202
+RAX: 0000000000000478 RBX: ffff9c6341eb7800 RCX: 0000000000000000
+RDX: 000000000000007f RSI: ffffb4218057fea8 RDI: ffff9c6341fb8400
+RBP: 4141414141414141 R08: ffffffffa44a4608 R09: 0000000000004ffb
+R10: 00000000fffff000 R11: 3fffffffffffffff R12: 0000000000000478
+R13: 0000000000000000 R14: 00007fff48e66110 R15: ffffb4218057fef8
+FS:  0000000000405778(0000) GS:ffff9c6342400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffffffff8127bbb2 CR3: 0000000001f70000 CR4: 00000000003006f0
+Kernel panic - not syncing: Fatal exception
+Kernel Offset: 0x22600000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)

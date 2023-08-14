@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Use example:
+# ./tools/run.sh -l LK01/qemu/bzImage -r LK01/qemu/rootfs_updated.cpio
+
 # Configuration
 SMEP=1
 SMAP=0

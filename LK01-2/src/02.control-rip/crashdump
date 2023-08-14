@@ -1,0 +1,54 @@
+/ # ./control-rip
+[+] kbase = 0xffffffff81000000
+[+] g_buf = 0xffff888002fccc00
+BUG: unable to handle page fault for address: ffffffffdead0c00
+#PF: supervisor instruction fetch in kernel mode
+#PF: error_code(0x0010) - not-present page
+PGD 1e0d067 P4D 1e0d067 PUD 1e0f067 PMD 0
+Oops: 0010 [#1] SMP PTI
+CPU: 0 PID: 66 Comm: control-rip Tainted: G           O      5.15.0 #1
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.16.2-1.fc38 04/01/2014
+RIP: 0010:0xffffffffdead0c00
+Code: Unable to access opcode bytes at RIP 0xffffffffdead0bd6.
+RSP: 0018:ffffc9000012fe10 EFLAGS: 00000286
+RAX: ffffffffdead0c00 RBX: ffff888002fcd400 RCX: 00000000deadbeef
+RDX: 00000000cafebabe RSI: 00000000deadbeef RDI: ffff888002fcd000
+RBP: ffffc9000012fea8 R08: 00000000cafebabe R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 00000000deadbeef
+R13: ffff888002fcd000 R14: 00000000cafebabe R15: ffff888002faf700
+FS:  0000000000406758(0000) GS:ffff888003800000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffffffffdead0bd6 CR3: 0000000002e94000 CR4: 00000000003006f0
+Call Trace:
+ ? tty_ioctl+0x38a/0x920
+ ? _copy_from_user+0x2e/0x60
+ ? module_write+0x10d/0x135 [vuln]
+ __x64_sys_ioctl+0x3c3/0x8f0
+ ? vfs_write+0xa5/0x260
+ ? ksys_write+0x53/0xd0
+ do_syscall_64+0x43/0x90
+ entry_SYSCALL_64_after_hwframe+0x44/0xae
+RIP: 0033:0x401665
+Code: 63 f6 48 8d 44 24 60 48 89 54 24 30 48 89 44 24 10 48 8d 44 24 20 48 89 44 24 18 b8 10 00 00 00 c7 44 24 08 1d
+RSP: 002b:00007ffd8e3a81b0 EFLAGS: 00000202 ORIG_RAX: 0000000000000010
+RAX: ffffffffffffffda RBX: 0000000000000001 RCX: 0000000000401665
+RDX: 00000000cafebabe RSI: ffffffffdeadbeef RDI: 0000000000000036
+RBP: 00007ffd8e3a88c0 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000202 R12: 000000000040114b
+R13: 00007ffd8e3a8918 R14: 0000000000000000 R15: 0000000000000000
+Modules linked in: vuln(O)
+CR2: ffffffffdead0c00
+---[ end trace c63de7e19e274250 ]---
+RIP: 0010:0xffffffffdead0c00
+Code: Unable to access opcode bytes at RIP 0xffffffffdead0bd6.
+RSP: 0018:ffffc9000012fe10 EFLAGS: 00000286
+RAX: ffffffffdead0c00 RBX: ffff888002fcd400 RCX: 00000000deadbeef
+RDX: 00000000cafebabe RSI: 00000000deadbeef RDI: ffff888002fcd000
+RBP: ffffc9000012fea8 R08: 00000000cafebabe R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: 00000000deadbeef
+R13: ffff888002fcd000 R14: 00000000cafebabe R15: ffff888002faf700
+FS:  0000000000406758(0000) GS:ffff888003800000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffffffffdead0bd6 CR3: 0000000002e94000 CR4: 00000000003006f0
+Kernel panic - not syncing: Fatal exception
+Kernel Offset: disabled

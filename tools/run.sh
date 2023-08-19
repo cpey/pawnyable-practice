@@ -5,9 +5,9 @@
 
 # Configuration
 SMEP=1
-SMAP=1
-KASLR=1
-KPTI=1
+SMAP=0
+KASLR=0
+KPTI=0
 
 # Arguments
 # 1 - Linux kernel to run

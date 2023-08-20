@@ -15,7 +15,6 @@ tools=$(realpath $(echo $0 | sed  "s/\(.*\)\(\/.*\)/\1/g"))
 lk_dir=$tools/../$lk
 fs_dir=$lk_dir/fs
 qemu=$lk_dir/qemu
-rootfs=$qemu/rootfs.cpio
 
 orig_dir=$fs_dir/rootfs_original
 upd_dir=$fs_dir/rootfs_updated
@@ -23,12 +22,14 @@ upd_dir=$fs_dir/rootfs_updated
 pushd $(pwd)
 
 mkdir -p $orig_dir
-mkdir -p $upd_dir
-
 cd $orig_dir
 cpio -idv < $qemu/rootfs.cpio
 
-cd $upd_dir
-cpio -idv < $qemu/rootfs_updated.cpio
+updated_rootfs=$qemu/rootfs_updated.cpio
+if [[ -a  $updated_rootfs ]]; then
+    mkdir -p $upd_dir
+    cd $upd_dir
+    cpio -idv < $updated_rootfs
+fi
 
 popd

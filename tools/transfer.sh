@@ -3,7 +3,7 @@
 # Example of use:
 # $ ./tools/transfer.sh LK01/src/01.test/
 
-ROOT=0
+ROOT=1
 
 set -ex
 tools=$(realpath $(echo $0 | sed  "s/\(.*\)\(\/.*\)/\1/g"))

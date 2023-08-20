@@ -409,7 +409,7 @@ as a kernel module:
       - call_modprobe()    
 ~~~
 
-Kernel code flow in [loading_kernel_module.md](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/loading_kernel_module.md).
+Kernel code flow in [loading_kernel_module.md](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/notes/loading_kernel_module.md).
 
 The objective is to replace the string "/sbin/modprobe" with the attacker's shellcode.
 
@@ -469,6 +469,13 @@ system("/tmp/pwn"); // call modprobe_path
 ~~~
 
 See: [src/05.heapbof-aaw/heapbof-aaw.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/heapbof-aaw.c)
+
+### Other functions executing system commands
+
+- orderly_poweroff() [kernel/reboot.c]
+- orderly_reboot() [kernel/reboot.c]
+
+See: [src/05.heapbof-aaw/poweroff_and_reboot_cmds.md](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/notes/poweroff_and_reboot_cmds.md)
 
 ## struct cred
 

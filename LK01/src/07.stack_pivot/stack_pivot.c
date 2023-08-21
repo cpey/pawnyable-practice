@@ -63,7 +63,7 @@ static void win() {
   execve("/bin/sh", argv, envp);
 }
 
-void build_fake_stack(void){
+void build_fake_stack(void) {
   fake_stack = mmap((void *)0x5b000000 - 0x1000, 0x2000,
 			PROT_READ|PROT_WRITE|PROT_EXEC,
 			MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0);

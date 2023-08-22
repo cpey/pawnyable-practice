@@ -26,6 +26,9 @@ File: kernel/reboot.c
 
 ## orderly_reboot()
 
+> **_NOTE:_** `reboot_cmd` string is declared constant, which results on a page
+> fault when trying to overwrite.
+
 ~~~c
 File: kernel/reboot.c
 

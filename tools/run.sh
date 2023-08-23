@@ -3,11 +3,14 @@
 # Use example:
 # ./tools/run.sh -l LK01/qemu/bzImage -r LK01/qemu/rootfs_updated.cpio
 
-# Configuration
+# Security configuration
 SMEP=1
 SMAP=1
 KASLR=1
 KPTI=1
+
+# Number of cpu cores (on a 1 socket machine)
+SMP=2
 
 # Arguments
 # 1 - Linux kernel to run
@@ -57,7 +60,7 @@ qemu-system-x86_64 \
     -append "$cmdline" \
     -no-reboot \
     -cpu $cpu \
-    -smp 1 \
+    -smp $SMP \
     -monitor /dev/null \
     -initrd $rootfs \
     -net nic,model=virtio \

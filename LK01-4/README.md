@@ -63,7 +63,7 @@ A test of the race condition can be found in [src/01.race-test/race-test.c](http
 
 The SLUB allocator manages the slab used for object allocation in a memory area dedicated to each CPU core. That has to be kept into consideration when running the heap spray.
 
-Using `sched_setaffinity(2)` we can determine the CPU a given thread is allowed to run.
+Using `sched_setaffinity(2)` we can define the CPU a given thread is assigned.
 
 See exploit in [src/02.race-krop/race-krop.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/02.race-krop/race-krop.c)
 and a more reliable version in [src/03.race-imp/race-imp.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/03.race-imp/race-imp.c)

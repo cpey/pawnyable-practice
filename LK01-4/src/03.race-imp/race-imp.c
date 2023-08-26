@@ -158,7 +158,7 @@ int create_overlapped() {
     puts("[-] Bad luck!");
     exit(1);
   }
-  // Blank the buffer as it will be used determine the success of the spray
+  // Blank the buffer as it will be used to determine the success of the spray
   memset(buf, 0, 14);
   write(fd1, buf, 14);
 

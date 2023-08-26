@@ -326,7 +326,7 @@ Use the following gadget:
 0xffffffff815a9798: mov esp, 0x39000000; ret;
 ~~~
 
-See: [src/03.stack_pivot](https://github.com/cpey/pawnyable/tree/main/LK01-2/src/03.stack_pivot)
+See: [src/03.stack-pivot](https://github.com/cpey/pawnyable/tree/main/LK01-2/src/03.stack-pivot)
 
 # Bypassing SMAP: Stack Pivot to kernel heap
 

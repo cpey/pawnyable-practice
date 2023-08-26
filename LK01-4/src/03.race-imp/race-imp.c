@@ -1,5 +1,10 @@
 /**
  * Improved version of race-krop.c
+ *
+ * - Discards the candidate tty_struct when its leaked kernel base address is
+ *   not completely page aligned.
+ * - A `retry` flag is set to continue spraying until a valid tty_struct is
+ *   obtained.
  */
 
 #define _GNU_SOURCE

@@ -14,7 +14,7 @@ The race condition exists by not using an atomic operation to read and write
 the mutex variable, which results in a data race on the `g_buf` pointer.
 
 Winning the race will result in the same use-after-free vulnerability seen in
-(part 3)[https://github.com/cpey/pawnyable/tree/main/LK01-3].
+[part 3](https://github.com/cpey/pawnyable/tree/main/LK01-3).
 
 ~~~gdb
 [0x08000199 [xAdvc]0 2% 245 vuln.ko]> pd $r @ sym.module_open
@@ -57,10 +57,13 @@ Winning the race will result in the same use-after-free vulnerability seen in
 43  0x00000848 0x08000848 GLOBAL OBJ    4        mutex
 ~~~
 
-A test of the race condition can be found in (src/01.race-test/race-test.c)[https://github.com/cpey/pawnyable/blob/main/LK01-4/src/01.race-test/race-test.c]
+A test of the race condition can be found in [src/01.race-test/race-test.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/01.race-test/race-test.c)
 
 ## CPU and Heap Spray
 
 The SLUB allocator manages the slab used for object allocation in a memory area dedicated to each CPU core. That has to be kept into consideration when running the heap spray.
 
 Using `sched_setaffinity(2)` we can determine the CPU a given thread is allowed to run.
+
+See exploit in [src/02.race-krop/race-krop.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/02.race-krop/race-krop.c)
+and a more reliable version in [src/03.race-imp/race-imp.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/03.race-imp/race-imp.c)

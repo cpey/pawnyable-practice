@@ -10,7 +10,7 @@ KASLR=1
 KPTI=1
 
 # Number of cpu cores (on a 1 socket machine)
-SMP=2
+SMP=8
 
 # Arguments
 # 1 - Linux kernel to run

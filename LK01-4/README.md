@@ -65,5 +65,12 @@ The SLUB allocator manages the slab used for object allocation in a memory area 
 
 Using `sched_setaffinity(2)` we can define the CPU a given thread is assigned.
 
-See exploit in [src/02.race-krop/race-krop.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/02.race-krop/race-krop.c)
+- Find exploit in [src/02.race-krop/race-krop.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/02.race-krop/race-krop.c)
 and a more reliable version in [src/03.race-imp/race-imp.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/03.race-imp/race-imp.c)
+- Version found in [src/08.race-scan/race-scan.c](https://github.com/cpey/pawnyable/blob/main/LK01-4/src/08.race-scan/race-scan.c) adjusts the exploit to the number of CPUs
+
+## Key Points
+
+- The CPU core that performed the memory allocation in kernel space is not necessarily related to the CPU cores used during the race.
+- The spray needs to be done on the same CPU that performed the allocation.
+

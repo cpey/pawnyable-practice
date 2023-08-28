@@ -84,7 +84,7 @@ int main() {
   fd = open("/dev/angus", O_RDWR);
   if (fd == -1) fatal("/dev/angus");
 
-  // 偽のXorCipher構造体をNULLポインタに用意
+  // Allocate memory at NULL address for fake XorCipher
   if (mmap(0, 0x1000, PROT_READ|PROT_WRITE,
            MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE|MAP_POPULATE,
            -1, 0) != NULL)

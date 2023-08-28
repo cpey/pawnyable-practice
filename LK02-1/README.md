@@ -230,3 +230,6 @@ void AAW(char *dst, char *src, size_t len) {
   free(tmp);
 }
 ~~~
+
+- AAR/AAW test in [src/02.angus-aar/angus-aar.c](https://github.com/cpey/pawnyable/blob/main/LK02-1/src/02.angus-aar/angus-aar.c)
+- Exploit that escalates privileges by modifying *struct cred* in [src/03.angus-exploit/angus-exploit.c](https://github.com/cpey/pawnyable/blob/main/LK02-1/src/03.angus-exploit/angus-exploit)

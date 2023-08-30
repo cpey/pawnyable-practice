@@ -6,7 +6,7 @@
 # Security configuration
 SMEP=1
 SMAP=0
-KASLR=1
+KASLR=0
 KPTI=1
 
 # Number of cpu cores (on a 1 socket machine)

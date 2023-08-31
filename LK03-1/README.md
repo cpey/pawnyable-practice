@@ -217,7 +217,9 @@ int single_open(struct file *file, int (*show)(struct seq_file *, void *),
 
 The goal is to have a victim object `seq_operations` placed right after the
 vulnerable buffer, and by using the out-of-bounds read, read its first pointer
-`void * (*start) (struct seq_file *m, loff_t *pos)` and use its value to leak the kernel base address. Then, replace the same pointer with the rop gadget pivoting the stack, and finally execute the gadget by calling `read()`:
+`void * (*start) (struct seq_file *m, loff_t *pos)` and use its value to leak
+the kernel base address. Then, replace the same pointer with the rop gadget
+pivoting the stack, and finally execute the gadget by calling `read()`:
 
 ~~~c
   // Spray `seq_operations` around the Dexter buffer

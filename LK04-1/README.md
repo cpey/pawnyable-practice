@@ -53,3 +53,13 @@ userfaultfd handler fires on the first access to each page.
 > NOTE: Keep in mind that since the handler runs on a separate thread, we need
 > to fix the CPU with the sched_setaffinity if we are going to spray from
 > within it.
+
+## Exploitation
+
+### UAF Read 
+
+Uses `blob_get()`. Makes it cause a page fault at the time of executing _copy_to_user()_. In the page fault handler, the victim is deleted and _tty_struct_ objects are sprayed. `blob_get()` ends up returning the _tty_struct_ at the position of the deleted object.
+
+### UAF Write 
+
+Uses `blob_set()`. Makes it cause a page fault at the time of executing _copy_from_user()_. In the page fault handler, the victim is deleted and _tty_struct_ objects are sprayed. The handler fills the _src_ address with the content to overwrite _tty_struct_ with.

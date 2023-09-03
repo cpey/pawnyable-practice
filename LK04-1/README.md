@@ -58,8 +58,23 @@ userfaultfd handler fires on the first access to each page.
 
 ### UAF Read 
 
-Uses `blob_get()`. Makes it cause a page fault at the time of executing _copy_to_user()_. In the page fault handler, the victim is deleted and _tty_struct_ objects are sprayed. `blob_get()` ends up returning the _tty_struct_ at the position of the deleted object.
+Uses `blob_get()`. Makes it cause a page fault at the time of executing
+_copy_to_user()_. In the page fault handler, the victim is deleted and
+_tty_struct_ objects are sprayed. The fault handler exits and `blob_get()` ends
+up returning the _tty_struct_ that is now found at the position of the deleted
+object.
+
+* A poc of the uaf in 
+[fleckvieh-uaf.c](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/03.fleckvieh-uaf/fleckvieh-uaf.c)
 
 ### UAF Write 
 
-Uses `blob_set()`. Makes it cause a page fault at the time of executing _copy_from_user()_. In the page fault handler, the victim is deleted and _tty_struct_ objects are sprayed. The handler fills the _src_ address with the content to overwrite _tty_struct_ with.
+Uses `blob_set()`. Makes it cause a page fault at the time of executing
+_copy_from_user()_. In the page fault handler, the victim is deleted and
+_tty_struct_ objects are sprayed. The handler fills the _src_ address with the
+content to overwrite _tty_struct_ with. The fault handler exits and
+`blob_set()` finishes overwritting the victim, now a _tty_struct_,  with the
+fake _tty_struct_ content.
+
+* Final exploit in 
+[fleckvieh-uffd.c](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/04.fleckvieh-uffd/fleckvieh-uffd.c)

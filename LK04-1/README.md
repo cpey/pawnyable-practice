@@ -1,8 +1,9 @@
-# Using userfaultfd
+# Using userfaultfd and FUSE
 
-Practice from [1].
+Practice from [1] and [2].
 
 [1] https://pawnyable.cafe/linux-kernel/LK04/uffd.html
+[2] https://pawnyable.cafe/linux-kernel/LK04/fuse.html
 
 ## Vulnerability
 
@@ -78,3 +79,54 @@ fake _tty_struct_ content.
 
 * Final exploit in 
 [fleckvieh-uffd.c](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/04.fleckvieh-uffd/fleckvieh-uffd.c)
+
+# FUSE
+
+Filesystem in Userspace (FUSE) is added to the kernel with the built config *CONFIG_FUSE_FS*.
+
+## Configuring libfuse in the local system
+
+Download [libuse](https://github.com/libfuse/libfuse), checkout to branch
+*fuse-2.9.9* and apply the
+[patch](https://github.com/libfuse/libfuse/commit/5a43d0f724c56f8836f3f92411e0de1b5f82db32)
+before building:
+
+~~~sh
+git clone https://github.com/libfuse/libfuse.git
+cd libfuse
+git checkout fuse-2.9.9
+git cherry-pick 5a43d0f724c56f8836f3f92411e0de1b5f82db32
+./makeconf.sh
+configure --enable-static=yes
+make-j8
+make install
+~~~
+
+After building, static and shared libraries for libfuse v2.9.9 are found in */usr/local/lib*:
+
+~~~sh
+$ ls /usr/local/lib/libfuse.* -1
+/usr/local/lib/libfuse.a
+/usr/local/lib/libfuse.la
+/usr/local/lib/libfuse.so
+/usr/local/lib/libfuse.so.2
+/usr/local/lib/libfuse.so.2.9.9
+~~~
+
+Now we can build and run the [test
+program](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/05.fuse-test/fuse-test.cffd.c)
+on the test system.
+
+~~~sh
+~ $ mkdir /tmp/test
+~ $ ./fuse-test /tmp/test
+~ $ ls -tlra /tmp/test/file
+[+] getattr_callback
+-rwxrwxrwx    1 root     root            14 Jan  1  1970 /tmp/test/file
+~ $ cat /tmp/test/file
+[+] getattr_callback
+[+] open_callback
+[+] read_callback
+Hello, World!
+~~~
+

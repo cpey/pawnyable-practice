@@ -82,9 +82,23 @@ fake _tty_struct_ content.
 
 # FUSE
 
-Filesystem in Userspace (FUSE) is added to the kernel with the built config *CONFIG_FUSE_FS*.
+FUSE is a userspace filesystem framework. It consists of a kernel module
+(fuse.ko), a userspace library (libfuse.*) and a mount utility (fusermount) [3].
+
+It is added to the kernel with the configuration *CONFIG_FUSE_FS*.
+
+[3] https://www.kernel.org/doc/html/next/filesystems/fuse.html
 
 ## Configuring libfuse in the local system
+
+The version of *fusermount* running on the test VM is v2.9.9, therefore in
+order to compile binaries statically linked with libfuse that run on the
+system, we need a static library of libfuse (libfuse.a) of the same version.
+
+~~~sh
+~ $ fusermount -V
+fusermount version: 2.9.9
+~~~
 
 Download [libuse](https://github.com/libfuse/libfuse), checkout to branch
 *fuse-2.9.9* and apply the
@@ -114,7 +128,7 @@ $ ls /usr/local/lib/libfuse.* -1
 ~~~
 
 Now we can build and run the [test
-program](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/05.fuse-test/fuse-test.cffd.c)
+program](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/05.fuse-test/fuse-test.c)
 on the test system.
 
 ~~~sh
@@ -129,4 +143,17 @@ on the test system.
 [+] read_callback
 Hello, World!
 ~~~
+
+* An example using a richer set of libfuse APIs is included in
+[fuse-loop.c](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/06.fuse-loop/fuse-loop.c)
+
+## Exploitation
+
+The exploitation works in the same way as with *userfaultfd*. Now, the memory
+passed to the kernel will be backed by a file in FUSE. When this file has not
+been mapped using MAP_POPULATE, it will cause a page fault on the first access,
+that makes the fuse read handler to be invoked.
+
+* A working exploit using FUSE in
+[fleckvieh-fuse.c](https://github.com/cpey/pawnyable/blob/main/LK04-1/src/07.fleckvieh-fuse/fleckvieh-fuse.c)
 

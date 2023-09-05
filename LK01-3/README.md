@@ -1,4 +1,4 @@
-# User-After-Free
+# Use-After-Free
 
 Practice from [1].
 

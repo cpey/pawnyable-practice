@@ -1,4 +1,4 @@
-# NULL Pointer Dereference
+# Null Pointer Dereference
 
 Practice from [1].
 

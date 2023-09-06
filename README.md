@@ -1,4 +1,4 @@
-# Pawnyable
+# Pawnyable-Practice
 
 Practice with the great
 [*Pawnyable*](https://pawnyable.cafe/linux-kernel/index.html).
